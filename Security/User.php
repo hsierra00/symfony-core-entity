@@ -1,64 +1,88 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Core\Security;
 
-use Symfony\Component\Security\Core\User\UserInterface;
+use App\Entity\Core\Base\IId;
+use App\Entity\Core\Base\Id;
+use Lexik\Bundle\JWTAuthenticationBundle\Security\User\JWTUserInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity
  * @ORM\Table(name="user")
  */
-class User implements IId, IName, UserInterface
+class User implements IId, JWTUserInterface
 {
     use Id;
-    use UniqueName;    
+    
+    /**
+     * @ORM\Column(type="string", length=250, nullable=false)
+     */
+    protected $username;
+
+    /**
+     * @ORM\Column(type="string", length=250, nullable=false)
+     */
+    protected $credential;
 
     /**
      * @ORM\Column(type="string", unique=true)
      */
-    private $apiKey;
+    private $roles;
 
-    /**
-     * Returns the roles granted to the user.     
-     * @return string[] The user roles
-     */
-    public function getRoles() 
+    public function __construct($username, array $roles = [])
     {
-        return ['ROLE_USER'];
+        $this->username = $username;
+        $this->roles    = $roles;
     }
 
     /**
-     * Returns the password used to authenticate the user.     
-     * @return string|null The encoded password if any
+     * {@inheritdoc}
      */
-    public function getPassword()
-    {        
-    }
-
-    /**
-     * Returns the salt that was originally used to encode the password.     
-     * @return string|null The salt
-     */
-    public function getSalt()
+    public static function createFromPayload($username, array $payload)
     {
+        if (isset($payload['roles'])) {
+            return new static($username, (array) $payload['roles']);
+        }
 
+        return new static($username);
     }
 
     /**
-     * Returns the username used to authenticate the user.
-     * @return string The username
+     * {@inheritdoc}
      */
     public function getUsername()
     {
-        return $this->name;
+        return $this->username;
     }
 
     /**
-     * Removes sensitive data from the user.
+     * {@inheritdoc}
+     */
+    public function getRoles()
+    {
+        return $this->roles;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getPassword()
+    {
+        return $this->credential;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSalt()
+    {
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function eraseCredentials()
     {
-
     }
 }
